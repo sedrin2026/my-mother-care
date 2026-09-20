@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MY MOTHER CARE 音声テスト</title>
+<style>
+  body{font-family:sans-serif;background:#f4f6f8;color:#222;margin:0;padding:24px;text-align:center}
+  .box{max-width:520px;margin:auto;background:#fff;border-radius:20px;padding:24px;box-shadow:0 4px 18px #0002}
+  h1{font-size:22px;margin:0 0 10px}
+  p{color:#555}
+  button{width:100%;min-height:70px;margin:10px 0;border:0;border-radius:16px;font-size:19px;font-weight:700;cursor:pointer}
+  .morning{background:#fff1a8}
+  .night{background:#cfd8ff}
+  #status{margin-top:14px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>🎙️ MY MOTHER CARE 音声テスト</h1>
+  <p>聞きたい方をタップしてください。</p>
+  <button class="morning" onclick="playVoice('morning')">🌅 朝の音声を再生</button>
+  <button class="night" onclick="playVoice('night')">🌙 夜の音声を再生</button>
+  <div id="status">待機中</div>
+  <audio id="player" preload="auto"></audio>
+</div>
+<script>
+const player=document.getElementById('player');
+const status=document.getElementById('status');
+function playVoice(which){
+  player.pause();
+  player.currentTime=0;
+  player.src = which==='morning' ? 'audio/morning_voice.mp3' : 'audio/night_voice.mp3';
+  player.play().then(()=>{
+    status.textContent=(which==='morning'?'🌅 朝':'🌙 夜')+'の音声を再生中…';
+  }).catch(()=>{
+    status.textContent='音声を再生できません。audioフォルダとファイル名を確認してください。';
+  });
+}
+player.addEventListener('ended',()=>status.textContent='再生終了 ✓');
+</script>
+</body>
+</html>
