@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MY MOTHER CARE FID登録・診断版</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5fbff;color:#183b4d;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif}
+.w{max-width:600px;margin:auto;padding:24px 16px}.c{background:#fff;border:1px solid #cde7f4;border-radius:22px;padding:22px}
+h1{text-align:center;font-size:25px;line-height:1.35}.lead{text-align:center;line-height:1.8}
+button{width:100%;border:0;border-radius:16px;padding:17px;font-size:18px;font-weight:800;background:#1487c9;color:#fff}
+#o{margin-top:16px;padding:14px;border-radius:14px;background:#eef6fa;line-height:1.7;word-break:break-all}
+.ok{background:#e9f9ef!important;color:#11643a}.ng{background:#fff0f0!important;color:#922}.wait{background:#fff8df!important;color:#705600}
+</style>
+</head>
+<body><div class="w"><div class="c">
+<h1>🔔 新方式 FID登録<br>診断版</h1>
+<p class="lead">ボタン自体は必ず反応します。<br>その後Firebaseを読み込み、結果を画面に表示します。</p>
+<button id="g" type="button">📱 このスマホをFID登録</button>
+<div id="o">準備OKです。ボタンを1回押してください。</div>
+</div></div>
+
+<script>
+const o=document.getElementById("o");
+const b=document.getElementById("g");
+function show(x,c){o.className=c||"";o.innerHTML=x;}
+window.addEventListener("error",e=>show("❌ ページエラー<br>"+String(e.message||e.error||"不明"),"ng"));
+window.addEventListener("unhandledrejection",e=>show("❌ 処理エラー<br>"+String((e.reason&&e.reason.message)||e.reason||"不明"),"ng"));
+
+b.addEventListener("click", async function(){
+  show("① ボタン反応OK！<br>⏳ Firebaseを読み込んでいます…","wait");
+  b.disabled=true;
+  try{
+    if(!("Notification" in window)) throw new Error("このChromeではNotification APIが使えません。");
+    if(!("serviceWorker" in navigator)) throw new Error("このChromeではService Workerが使えません。");
+
+    const [{initializeApp}, msg] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/12.3.0/firebase-messaging.js")
+    ]);
+
+    if(typeof msg.register!=="function" || typeof msg.onRegistered!=="function"){
+      throw new Error("読み込んだFirebase SDKに register/onRegistered が見つかりません。");
+    }
+
+    show("② Firebase読込OK！<br>⏳ 通知とService Workerを確認中…","wait");
+
+    let p=Notification.permission;
+    if(p!=="granted") p=await Notification.requestPermission();
+    if(p!=="granted") throw new Error("通知が許可されていません。状態："+p);
+
+    const regSW=await navigator.serviceWorker.register("./firebase-messaging-sw.js",
+      {scope:"./",updateViaCache:"none"});
+    await regSW.update();
+    await navigator.serviceWorker.ready;
+
+    const app=initializeApp({
+      apiKey:"AIzaSyDUccPZVteo8ikjRXgZYBuy2vcG9Chpqr8",
+      authDomain:"my-mother-care.firebaseapp.com",
+      projectId:"my-mother-care",
+      storageBucket:"my-mother-care.firebasestorage.app",
+      messagingSenderId:"772945697337",
+      appId:"1:772945697337:web:03b249c3767237ea210be8"
+    });
+    const messaging=msg.getMessaging(app);
+    let finished=false;
+
+    msg.onRegistered(messaging,(fid)=>{
+      finished=true;
+      show("✅ FID登録に成功！<br><br><b>Firebase Installation ID（FID）：</b><br>"+fid+
+           "<br><br>📸 この画面をスクショしてください。","ok");
+    });
+
+    show("③ Service Worker確認OK！<br>⏳ FID登録中…","wait");
+    await msg.register(messaging,{
+      vapidKey:"BBPajgR0QQFqob8UMyRqsI_GJKTfjdtZlbMDbWIWu6w2RcPk42jPv_quq59togWrlCSP-SobzvPDevR8RaHXJ_o",
+      serviceWorkerRegistration:regSW
+    });
+
+    setTimeout(()=>{
+      if(!finished) show("⚠️ register() は完了しましたが、FIDコールバックがまだ来ていません。<br><br>📸 この画面をスクショしてください。","wait");
+    },5000);
+
+  }catch(e){
+    show("❌ 診断エラー<br><br>"+String(e&&e.message?e.message:e)+
+         "<br><br>📸 この画面をスクショしてください。","ng");
+  }finally{
+    b.disabled=false;
+  }
+});
+</script>
+</body></html>
