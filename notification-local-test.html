@@ -1,0 +1,12 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MY MOTHER CARE 通知診断</title><style>*{box-sizing:border-box}body{margin:0;background:#fff8f3;color:#3d302d;font-family:sans-serif}.wrap{max-width:560px;margin:auto;padding:28px 18px}.card{background:#fff;border:1px solid #f0d8cc;border-radius:22px;padding:24px 18px}h1{text-align:center;font-size:24px}.sub{text-align:center;line-height:1.7;color:#766}button{width:100%;border:0;border-radius:16px;padding:17px;font-size:18px;font-weight:bold;background:#159957;color:#fff}#status{margin-top:18px;padding:14px;border-radius:14px;background:#f4f4f4;line-height:1.7;word-break:break-word}.ok{background:#eaf8ef!important;color:#126536}.ng{background:#fff0f0!important;color:#9b2323}.note{font-size:13px;color:#786c68;line-height:1.7}</style></head><body><div class="wrap"><div class="card"><h1>🔔 MY MOTHER CARE</h1><p class="sub">本命スマホ・通知単体テスト<br>FCMを使わず、このスマホ自身で通知を表示します。</p><button id="test">🔔 このスマホで通知テスト</button><div id="status">ボタンを押してください。</div><p class="note">通知が出れば、本命スマホ側の通知表示経路は正常です。</p></div></div><script>
+const s=document.getElementById('status');function show(m,c=''){s.className=c;s.innerHTML=m}
+document.getElementById('test').onclick=async()=>{try{
+if(!('Notification'in window)){show('❌ このChromeでは通知機能を利用できません。','ng');return}
+if(!('serviceWorker'in navigator)){show('❌ このChromeではService Workerを利用できません。','ng');return}
+let p=Notification.permission;if(p!=='granted')p=await Notification.requestPermission();
+if(p!=='granted'){show('❌ 通知が許可されていません。現在の状態：'+p,'ng');return}
+show('⏳ Service Workerを確認しています…');
+const r=await navigator.serviceWorker.register('./firebase-messaging-sw.js');await navigator.serviceWorker.ready;
+await r.showNotification('🔔 MY MOTHER CARE 通知テスト',{body:'この通知が見えれば、本命スマホ側の通知機能は正常です。',icon:'./my-mother-care-nanohana-header-v17.webp',tag:'my-mother-care-local-test',renotify:true,data:{url:'./responses.html'}});
+show('✅ 通知を出す命令に成功しました！<br>画面上部または通知欄を確認してください。','ok')
+}catch(e){show('❌ エラー：'+String(e.message||e),'ng')}};</script></body></html>
