@@ -1,0 +1,70 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>MY MOTHER CARE 通知登録</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#edfaff;color:#18364b;font-family:system-ui,sans-serif}main{max-width:650px;margin:auto;padding:22px}.c{background:#fff;border:2px solid #ccebf4;border-radius:24px;padding:22px;text-align:center;margin-top:12px}h1{color:#147cc0}button{width:100%;padding:15px;border:0;border-radius:28px;font-size:19px;font-weight:900;margin-top:12px}#login{background:#147cc0;color:#fff}#notify{background:#14a85b;color:#fff;display:none}#out{background:#eaf2f6;color:#496372;display:none}#s{margin-top:16px;padding:14px;border-radius:16px;background:#effbff;font-weight:900;line-height:1.5;word-break:break-all}.ok{background:#eaffef!important;color:#087b3a}.err{background:#fff0f3!important;color:#b81742}</style></head>
+<body><main><div class="c"><div style="font-size:48px">🔔</div><h1>MY MOTHER CARE</h1><h2>本命スマホ・通知登録</h2><p>このページは、いま操作しているスマホを通知先として登録するためのページです。</p><button id="login">G　Googleでログイン</button><button id="notify">🔔 このスマホで通知を受け取る</button><button id="out">ログアウト</button><div id="s">Googleログインしてください。</div>
+<div id="diag" style="margin-top:14px;padding:14px;border-radius:16px;background:#fff8dc;color:#5b4a00;font-weight:800;line-height:1.55;text-align:left;word-break:break-all;white-space:pre-wrap">🔍 VAPID一致診断を読み込み中...</div>
+</div></main>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import{getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import{getMessaging,getToken,isSupported}from"https://www.gstatic.com/firebasejs/12.3.0/firebase-messaging.js";
+const app=initializeApp({apiKey:"AIzaSyDUccPZVteo8ikjRXgZYBuy2vcG9Chpqr8",authDomain:"my-mother-care.firebaseapp.com",projectId:"my-mother-care",storageBucket:"my-mother-care.firebasestorage.app",messagingSenderId:"772945697337",appId:"1:772945697337:web:03b249c3767237ea210be8"}); const auth=getAuth(app); const provider=new GoogleAuthProvider();
+const ADMIN="1cmgGRhWrmPsCubkV38C2Fakcpp1",VAPID="BBPajgR0QQFqob8UMyRqsI_GJKTfjdtZlbMDbWIWu6w2RcPk42jPv_quq59togWrlCSP-SobzvPDevR8RaHXJ_o";
+const L=document.getElementById("login"),N=document.getElementById("notify"),O=document.getElementById("out"),S=document.getElementById("s");
+provider.setCustomParameters({prompt:"select_account"});
+L.onclick=async()=>{try{await signInWithPopup(auth,provider)}catch(e){S.className="err";S.textContent="ログイン失敗："+(e.code||e.message)}};
+O.onclick=()=>signOut(auth);
+N.onclick=async()=>{try{
+ if(!await isSupported())throw new Error("このブラウザはWeb通知に対応していません");
+ const p=await Notification.requestPermission(); if(p!=="granted")throw new Error("通知が許可されませんでした");
+ const reg=await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+ const token=await getToken(getMessaging(app),{vapidKey:VAPID,serviceWorkerRegistration:reg});
+ if(!token)throw new Error("通知用トークンを取得できませんでした");
+ S.className="ok"; S.innerHTML="✅ このスマホの通知登録に成功！<br><br>次のテストで使うFCMトークン：<br><small>"+token+"</small><br><br>この画面をスクショしてください。";
+ }catch(e){S.className="err";S.textContent="通知登録できませんでした："+(e.code||e.message)}};
+onAuthStateChanged(auth,u=>{
+ if(!u){L.style.display="block";N.style.display="none";O.style.display="none";S.className="";S.textContent="Googleログインしてください。";return}
+ L.style.display="none";O.style.display="block";
+ if(u.uid!==ADMIN){N.style.display="none";S.className="err";S.textContent="このGoogleアカウントには管理者権限がありません。";return}
+ N.style.display="block";S.className="";S.textContent="✅ 管理者ログイン済み。下の緑ボタンを押してください。";
+});
+
+function bytesToB64url(bytes){
+  let bin="";
+  for(let i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+async function runVapidDiagnostic(){
+  const D=document.getElementById("diag");
+  try{
+    const reg=await navigator.serviceWorker.getRegistration(
+      "https://sedrin2026.github.io/my-mother-care/"
+    );
+    if(!reg){
+      D.textContent="❌ MY MOTHER CARE のService Worker登録が見つかりません。";
+      return;
+    }
+    const sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      D.textContent="❌ PushSubscription：購読なし";
+      return;
+    }
+    const rawKey=sub.options && sub.options.applicationServerKey;
+    if(!rawKey){
+      D.textContent="❌ PushSubscriptionのapplicationServerKeyを取得できませんでした。";
+      return;
+    }
+    const actual=bytesToB64url(new Uint8Array(rawKey));
+    const match=(actual===VAPID);
+    D.textContent=
+      "🔍 VAPID一致診断\n\n"+
+      (match ? "✅ 完全一致しました！" : "❌ 一致しません！")+
+      "\n\n【現在のPushSubscriptionが使用中の鍵】\n"+actual+
+      "\n\n【HTMLのgetToken()に設定中の鍵】\n"+VAPID+
+      "\n\n比較結果："+(match ? "一致" : "不一致");
+  }catch(e){
+    D.textContent="❌ VAPID診断失敗："+(e.message||e);
+  }
+}
+window.addEventListener("load",()=>setTimeout(runVapidDiagnostic,1000));
+
+</script></body></html>
