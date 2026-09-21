@@ -1,0 +1,18 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MY MOTHER CARE FID登録</title><style>*{box-sizing:border-box}body{margin:0;background:#f5fbff;color:#183b4d;font-family:sans-serif}.w{max-width:600px;margin:auto;padding:24px 16px}.c{background:#fff;border:1px solid #cde7f4;border-radius:22px;padding:22px}h1{text-align:center;font-size:25px}.lead{text-align:center;line-height:1.7}button{width:100%;border:0;border-radius:16px;padding:17px;font-size:18px;font-weight:bold;background:#1487c9;color:#fff}#o{margin-top:16px;padding:14px;border-radius:14px;background:#eef6fa;line-height:1.7;word-break:break-all}.ok{background:#e9f9ef!important;color:#11643a}.ng{background:#fff0f0!important;color:#922}</style></head><body><div class="w"><div class="c"><h1>🔔 新方式 FID登録</h1><p class="lead">Firebaseの新しい方式で<br>本命スマホを登録します。</p><button id="g">📱 このスマホをFID登録</button><div id="o">ボタンを1回押してください。</div></div></div>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import{getMessaging,register,onRegistered}from"https://www.gstatic.com/firebasejs/12.3.0/firebase-messaging.js";
+const app=initializeApp({apiKey:"AIzaSyDUccPZVteo8ikjRXgZYBuy2vcG9Chpqr8",authDomain:"my-mother-care.firebaseapp.com",projectId:"my-mother-care",storageBucket:"my-mother-care.firebasestorage.app",messagingSenderId:"772945697337",appId:"1:772945697337:web:03b249c3767237ea210be8"});
+const m=getMessaging(app),V="BBPajgR0QQFqob8UMyRqsI_GJKTfjdtZlbMDbWIWu6w2RcPk42jPv_quq59togWrlCSP-SobzvPDevR8RaHXJ_o",o=document.getElementById("o");
+const show=(x,c="")=>{o.className=c;o.innerHTML=x};
+let got=false;
+onRegistered(m,(fid)=>{got=true;show("✅ FID登録に成功！<br><br><b>Firebase Installation ID（FID）：</b><br>"+fid+"<br><br>📸 この画面をスクショしてください。","ok")});
+document.getElementById("g").onclick=async()=>{try{
+if(!("Notification"in window)||!("serviceWorker"in navigator))throw Error("このChromeでは必要な通知機能を利用できません。");
+let p=Notification.permission;if(p!=="granted")p=await Notification.requestPermission();if(p!=="granted")throw Error("通知が許可されていません。");
+show("⏳ 新方式で登録しています…");
+const sw=await navigator.serviceWorker.register("./firebase-messaging-sw.js",{scope:"./",updateViaCache:"none"});await sw.update();await navigator.serviceWorker.ready;
+await register(m,{vapidKey:V,serviceWorkerRegistration:sw});
+setTimeout(()=>{if(!got)show("⏳ 登録処理は完了しました。FIDの通知を待っています…<br>10秒ほど待って、変わらなければこの画面をスクショしてください。")},2500);
+}catch(e){show("❌ FID登録エラー<br><br>"+String(e.message||e)+"<br><br>📸 この画面をスクショしてください。","ng")}};
+</script></body></html>
